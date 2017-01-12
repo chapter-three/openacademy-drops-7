@@ -8,7 +8,7 @@
 /**
  * The current system version.
  */
-define('VERSION', '7.14');
+define('VERSION', '7.15');
 
 /**
  * Core API compatibility.
@@ -749,6 +749,15 @@ function drupal_settings_initialize() {
         foreach($value as $conf_key => $conf_value) {
           $conf[$conf_key] = $conf_value;
         }
+      }
+      elseif ($key == 'databases') {
+        // Protect default configuration but allow the specification of
+        // additional databases. Also, allows fun things with 'prefix' if they
+        // want to try multisite.
+        if (!isset($databases) || !is_array($databases)) {
+          $databases = array();
+        }
+        $databases = array_replace_recursive($databases, $value);
       }
       else {
         $$key = $value;
@@ -1763,22 +1772,37 @@ function watchdog($type, $message, $variables = array(), $severity = WATCHDOG_NO
 }
 
 /**
- * Sets a message which reflects the status of the performed operation.
+ * Sets a message to display to the user.
  *
- * If the function is called with no arguments, this function returns all set
- * messages without clearing them.
+ * Messages are stored in a session variable and displayed in page.tpl.php via
+ * the $messages theme variable.
  *
- * @param $message
- *   The message to be displayed to the user. For consistency with other
- *   messages, it should begin with a capital letter and end with a period.
- * @param $type
- *   The type of the message. One of the following values are possible:
+ * Example usage:
+ * @code
+ * drupal_set_message(t('An error occurred and processing did not complete.'), 'error');
+ * @endcode
+ *
+ * @param string $message
+ *   (optional) The translated message to be displayed to the user. For
+ *   consistency with other messages, it should begin with a capital letter and
+ *   end with a period.
+ * @param string $type
+ *   (optional) The message's type. Defaults to 'status'. These values are
+ *   supported:
  *   - 'status'
  *   - 'warning'
  *   - 'error'
- * @param $repeat
- *   If this is FALSE and the message is already set, then the message won't
- *   be repeated.
+ * @param bool $repeat
+ *   (optional) If this is FALSE and the message is already set, then the
+ *   message won't be repeated. Defaults to TRUE.
+ *
+ * @return array|null
+ *   A multidimensional array with keys corresponding to the set message types.
+ *   The indexed array values of each contain the set messages for that type.
+ *   Or, if there are no messages set, the function returns NULL.
+ *
+ * @see drupal_get_messages()
+ * @see theme_status_messages()
  */
 function drupal_set_message($message = NULL, $type = 'status', $repeat = TRUE) {
   if ($message) {
@@ -2731,7 +2755,7 @@ function request_path() {
     return $path;
   }
 
-  if (isset($_GET['q'])) {
+  if (isset($_GET['q']) && is_string($_GET['q'])) {
     // This is a request with a ?q=foo/bar query string. $_GET['q'] is
     // overwritten in drupal_path_initialize(), but request_path() is called
     // very early in the bootstrap process, so the original value is saved in
@@ -2862,7 +2886,7 @@ function ip_address() {
 }
 
 /**
- * @ingroup schemaapi
+ * @addtogroup schemaapi
  * @{
  */
 
@@ -2984,12 +3008,12 @@ function drupal_get_complete_schema($rebuild = FALSE) {
 }
 
 /**
- * @} End of "ingroup schemaapi".
+ * @} End of "addtogroup schemaapi".
  */
 
 
 /**
- * @ingroup registry
+ * @addtogroup registry
  * @{
  */
 
@@ -3151,7 +3175,7 @@ function registry_update() {
 }
 
 /**
- * @} End of "ingroup registry".
+ * @} End of "addtogroup registry".
  */
 
 /**
